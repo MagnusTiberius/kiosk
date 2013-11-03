@@ -19,7 +19,7 @@ public:
     QByteArray httpGet(unsigned int, bool =true);
     QByteArray httpGet(std::vector<unsigned int>, bool =true);
 
-    QString prettyTime(unsigned int );
+    QString prettyTime(int );
 
     
 signals:

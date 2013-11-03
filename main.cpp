@@ -5,6 +5,8 @@
 #include <QSettings>
 #include <QDateTime>
 #include <QInputDialog>
+#include <QStatusBar>
+#include <QTimer>
 #include <vector>
 
 // Used to parse JSON reply
@@ -34,7 +36,6 @@ int main(int argc, char *argv[])
         if(ok && ~appId.isEmpty()) {
             settings.setValue(TMAppStr, appId);
             settings.sync();
-            qDebug() << settings.allKeys();
         }
 
     }
@@ -47,6 +48,7 @@ int main(int argc, char *argv[])
     std::vector<unsigned int> stops;
     stops.push_back(10117);  // Goose Hollow Eastbound
     stops.push_back(10118);  // Goose Hollow Westbound
+    stops.push_back(1114);   // #6 bus to Jantzen Beach at Goose Hollow
 
     // Get and parse the JSON data.
     QByteArray ba = tm.httpGet(stops, true);
@@ -56,7 +58,6 @@ int main(int argc, char *argv[])
         exit(1);
     }
     result = result["resultSet"].toMap();
-    qDebug() << result["queryTime"].toString();
 
     QVariantList arrivals = result["arrival"].toList();
 
@@ -67,20 +68,58 @@ int main(int argc, char *argv[])
         // Convert this arrival set to a map.
         QVariantMap currArrival = arrival.toMap();
 
-        // First, parse the time from the JSON data to determine minutes.
-        QDateTime eTime = QDateTime::fromString(currArrival["estimated"].toString(), Qt::ISODate);
+        // Get current time for calculating time delta.
         QDateTime now = QDateTime::currentDateTime();
+        QString timeString;
 
-        int arrivalTimeInSec = now.secsTo(eTime);
+        QString status = currArrival["status"].toString();
+        int arrivalTimeInSec;
 
+        if(status.compare("estimated") == 0) {
+
+            // Estimated time is provided. Calculate delta and prepare string.
+            QDateTime eTime = QDateTime::fromString(currArrival["estimated"].toString(), Qt::ISODate);
+            arrivalTimeInSec = now.secsTo(eTime);
+            timeString = tm.prettyTime(arrivalTimeInSec);
+
+        } else if(status.compare("scheduled") == 0) {
+
+            // Scheduled time so just provide time up to that time.
+            timeString = "Scheduled - ";
+            QDateTime eTime = QDateTime::fromString(currArrival["scheduled"].toString(), Qt::ISODate);
+            arrivalTimeInSec = now.secsTo(eTime);
+            timeString.append(tm.prettyTime(arrivalTimeInSec));
+        } else if(status.compare("delayed") == 0) {
+            timeString = "Delayed";
+        } else if(status.compare("cancelled") == 0) {
+            timeString = "Cancelled";
+        } else {
+            timeString = "Unknown";
+        }
 
         // Create a horizontal layout to put in the vertical layout
         QHBoxLayout * hl = new QHBoxLayout;
 
-        // Create the sign name, estimated time of arrival, and put in horizontal layout.
+        // Create the sign icon by determining which icon to use and then set it.
         QLabel * icon = new QLabel;
-        icon->setText("STuff");
-        icon->setPixmap(QPixmap(":/new/train/25_railtransportation_inv.gif"));
+        icon->setFixedSize(50,50);
+        icon->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
+        QPixmap pm;
+        QString arrStr = currArrival["fullSign"].toString();
+
+
+        if(arrStr.contains("MAX")) {
+            pm = QPixmap(":/new/train/25_railtransportation.gif");
+            if(arrStr.contains("blue",Qt::CaseInsensitive)) {
+                icon->setStyleSheet("border: 5px solid blue;");
+            } else if(arrStr.contains("red",Qt::CaseInsensitive)) {
+                icon->setStyleSheet("border: 5px solid red;");
+            }
+        } else {
+            pm = QPixmap(":/new/train/23_bus.gif");
+        }
+        icon->setPixmap(pm.scaled(50, 50, Qt::KeepAspectRatio));
+
         hl->addWidget(icon);
 
         QLabel * sign = new QLabel;
@@ -88,8 +127,8 @@ int main(int argc, char *argv[])
         hl->addWidget(sign);
 
         QLabel * est = new QLabel;
-        est->setAlignment(Qt::AlignRight);
-        est->setText(tm.prettyTime(arrivalTimeInSec));
+        est->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        est->setText(timeString);
         hl->addWidget(est);
 
         vl->addLayout(hl);
@@ -99,6 +138,13 @@ int main(int argc, char *argv[])
     w.centralWidget()->setLayout(vl);
 
     w.show();
+
+    QStatusBar *status;
+    QLabel *statusLabel = new QLabel(NULL);
+    statusLabel->setText("Route and arrival data provided by permission of TriMet.");
+    status = w.statusBar();
+    status->addPermanentWidget(statusLabel,200);
+    status->show();
     
     return a.exec();
 }

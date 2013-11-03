@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/new/train">
         <file>25_railtransportation_inv.gif</file>
+        <file>23_bus.gif</file>
+        <file>25_railtransportation.gif</file>
     </qresource>
 </RCC>

@@ -49,15 +49,26 @@ QByteArray Trimet::httpGet(std::vector<unsigned int> stopIDs, bool json) {
 
     QByteArray ret = reply->readAll();
 
+    qDebug() <<  myUrl.toString();
+
     return ret;
 }
 
-QString Trimet::prettyTime(unsigned int seconds) {
-    unsigned int minLeft = seconds / 60;
-    unsigned int secLeft = seconds % 60;
+QString Trimet::prettyTime(int seconds) {
+
+    int minLeft = seconds / 60;
+    int secLeft = seconds % 60;
+
+    if(seconds < 0) {
+        minLeft = 0;
+        secLeft = 0;
+    } else {
+        minLeft = seconds / 60;
+        secLeft = seconds % 60;
+    }
 
     QString time;
-    time.sprintf("%2u:%02u", minLeft, secLeft);
+    time.sprintf("%2d:%02d", minLeft, secLeft);
 
     return time;
 }
