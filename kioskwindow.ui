@@ -11,9 +11,15 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>KioskWindow</string>
+   <string>Transit Timer</string>
   </property>
   <widget class="QWidget" name="centralWidget"/>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
