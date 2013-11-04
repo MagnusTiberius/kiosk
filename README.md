@@ -1,4 +1,4 @@
 kiosk
 =====
 
-A kiosk application I am working on for home to display arriving trains. Focused on running on a Raspberry Pi.
+A small application that displays the upcoming arrival information from TriMet in Portland, OR. I am targeting this application to function in full-screen running on a Raspberry Pi.
